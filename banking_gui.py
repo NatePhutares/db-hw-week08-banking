@@ -358,7 +358,18 @@ class BankingApp:
         2. SELECT balance FROM Accounts WHERE account_id = ?
         3. Display result in self.balance_result label
         """
-        messagebox.showinfo("TODO", "TODO: Implement check_balance()")
+        account_id = self.balance_account_entry.get().strip()
+        if account_id == "":
+            messagebox.showerror("Input error", "Account ID cannot be empty.")
+        else:
+            account_id = int(account_id)
+            with self.connection.cursor() as cursor:
+                cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s", account_id)
+                result = cursor.fetchone()
+                if result == None:
+                    self.balance_result.config(text = "No account found.")
+                else:
+                    self.balance_result.config(text = result["balance"])
 
     def refresh_accounts(self):
         """
