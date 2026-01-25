@@ -1,0 +1,10 @@
+# Required Python Version: 3.8 or higher (tested with 3.11)
+
+# Python package dependencies
+pymysql==1.1.2
+
+# Note: tkinter is required but is part of Python standard library
+# If you get "No module named tkinter" error:
+# - macOS: brew install python-tk@3.11
+# - Linux (Ubuntu/Debian): sudo apt-get install python3-tk
+# - Windows: tkinter is included with Python installer

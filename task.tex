@@ -1,0 +1,87 @@
+
+\newpage
+\newpage
+\subsection{Banking System GUI}
+
+We have provided a skeleton GUI application for a banking system. Your task is to implement the backend logic to connect the application to a MySQL database and perform transactional operations.
+
+\subsubsection{Tools}
+\begin{description}
+    \item[MySQL] \hfill \\
+    \textbf{Functionality:} A powerful, open-source Relational Database Management System (RDBMS) that stores and manages structured data using SQL. \\
+    \textbf{Variances:} MariaDB (a community-developed fork of MySQL, effectively a drop-in replacement).
+
+    \item[phpMyAdmin] \hfill \\
+    \textbf{Functionality:} A free software tool written in PHP, intended to handle the administration of MySQL over the Web. It supports operations on databases, tables, columns, relations, indexes, users, permissions, etc.
+
+    \item[Tkinter] \hfill \\
+    \textbf{Functionality:} The standard Python interface to the Tk GUI toolkit. It provides widgets such as buttons, labels, and text boxes to build desktop applications.
+
+    \item[PyMySQL] \hfill \\
+    \textbf{Functionality:} A pure-Python MySQL client library. It allows Python programs to connect to a MySQL server and execute SQL queries.
+\end{description}
+
+\subsubsection{Database Schema}
+You must create the following tables in your MySQL database to support the application:
+
+\begin{enumerate}
+    \item \textbf{Customers:} Stores user identity.
+    \begin{itemize}
+        \item \texttt{customer\_id} (int, PK), \texttt{name} (text), \texttt{tax\_id} (text, unique).
+    \end{itemize}
+
+    \item \textbf{Accounts:} Stores individual bank accounts.
+    \begin{itemize}
+        \item \texttt{account\_id} (int, PK), \texttt{customer\_id} (FK), \texttt{balance} (decimal).
+    \end{itemize}
+
+    \item \textbf{Transactions:} Stores an audit log of all operations.
+    \begin{itemize}
+        \item \texttt{transaction\_id} (int, PK), \texttt{account\_id} (FK), \texttt{transaction\_type} (text), \texttt{amount} (decimal), \texttt{created\_at} (timestamp).
+    \end{itemize}
+
+    \item \textbf{BankReserves:} Stores the total cash holding of the bank branch.
+    \begin{itemize}
+        \item \texttt{branch\_id} (int, PK), \texttt{total\_reserve} (decimal).
+    \end{itemize}
+
+    \item \textbf{AllCustomerTransactions (View):} A joined view for reporting.
+    \begin{itemize}
+        \item Logic: Join \texttt{Customers} $\bowtie$ \texttt{Accounts} $\bowtie$ \texttt{Transactions}.
+        \item Columns: \texttt{CustomerName}, \texttt{AccountID}, \texttt{Type}, \texttt{Amount}, \texttt{Date}.
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Lab Tasks}
+Open the provided \texttt{banking\_gui.py} file and complete the following TODO sections:
+
+\begin{enumerate}
+    \item \textbf{Server Connection:} Implement logic to \texttt{connect()} and \texttt{disconnect()} from the MySQL database server. Handle connection errors gracefully.
+    \item \textbf{Banking Operations:}
+    \begin{enumerate}
+        \item \textbf{Open Account:} Implement SQL to insert a new customer and account.
+        \item \textbf{Deposit (Transaction):}
+        \begin{itemize}
+            \item Update the specific \texttt{Account} balance ($+Amount$).
+            \item Update the \texttt{BankReserves} total reserve ($+Amount$).
+            \item \textbf{Requirement:} These updates must be wrapped in a transaction block. If one fails, both must roll back.
+        \end{itemize}
+
+        \item \textbf{Withdraw (Transaction):}
+        \begin{itemize}
+            \item Check if the \texttt{Account} has sufficient funds ($Balance \ge Amount$).
+            \item Update the \texttt{Account} balance ($-Amount$).
+            \item Update the \texttt{BankReserves} total reserve ($-Amount$).
+            \item \textbf{Requirement:} All steps must be atomic.
+        \end{itemize}
+
+        \item \textbf{Transfer (Transaction):} The core ACID test. Move money from Account A to Account B.
+        \begin{itemize}
+            \item Wrap operations in a \texttt{BEGIN ... COMMIT} transaction block.
+            \item If any step fails (e.g., insufficient funds), \texttt{ROLLBACK} the entire transaction.
+        \end{itemize}
+
+        \item \textbf{Check Balance:} Query and display the current balance.
+        \item \textbf{Bank Statement:} Query the \texttt{AllCustomerTransactions} view to display the user's transaction history.
+    \end{enumerate}
+\end{enumerate}
