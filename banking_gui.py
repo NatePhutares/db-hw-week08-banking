@@ -270,7 +270,54 @@ class BankingApp:
           automatically update BankReserves and insert into Transactions
         - Add UNIQUE constraint on Customers.tax_id (already exists)
         """
-        messagebox.showinfo("TODO", "TODO: Implement open_account()")
+        # TODO 1 ----
+        # get inputs from entries
+        customer_name = self.open_name_entry.get().strip()
+        tax_id = self.open_tax_entry.get().strip()
+        initial_deposit = self.open_deposit_entry.get().strip()
+
+        # validate inputs
+        if customer_name == "" or tax_id == "" or initial_deposit == "":
+            messagebox.showerror("Input error", "Inputs cannot be empty")
+            return
+        elif (initial_deposit < 0):
+            messagebox.showerror("Input error", "Initial Deposit must be non-negative number")
+            return
+        
+        # start transaction
+        try:
+            initial_deposit = float(initial_deposit)
+            with self.connection.cursor() as cursor:
+                # check if custom exist via tax_id
+                cursor.execute("SELECT customer_id FROM Customers WHERE tax_id = %s", (tax_id, ))
+                duplicate = cursor.fetchone()
+                if (duplicate == None):
+                    # insert new customer if not
+                    cursor.execute("INSERT INTO Customers (name, tax_id) VALUES (%s, %s)", (customer_name, tax_id))
+                    customer_id = cursor.lastrowid
+                else:
+                    customer_id = duplicate['customer_id']
+            
+                # insert new account
+                cursor.execute("INSERT INTO Accounts (customer_id, balance) VALUES (%s, 0)", (customer_id, ))
+
+                # if initial_deposit > 0: Update account balance, BankReserves, insert Transaction
+                if (initial_deposit > 0):
+                    account_id = cursor.lastrowid
+                    cursor.execute("UPDATE Accounts SET balance = balance + %s WHERE account_id = %s", (initial_deposit, account_id))
+                    cursor.execute("UPDATE BankReserves SET total_reserve = total_reserve + %s WHERE branch_id = 1", (initial_deposit, ))
+                    cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
+                                   (account_id, "OPEN_ACCOUNT", initial_deposit)
+                    )
+
+            # commit changes
+            self.connection.commit()
+            messagebox.showinfo("Success", "Insert successfully.")
+
+        except Exception:
+            self.connection.rollback()
+            messagebox.showerror("Error", "Failed to open account.")
+            raise
 
     def deposit(self):
         """
