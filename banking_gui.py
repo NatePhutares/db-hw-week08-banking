@@ -312,7 +312,7 @@ class BankingApp:
 
             # commit changes
             self.connection.commit()
-            messagebox.showinfo("Success", "Insert successfully.")
+            messagebox.showinfo("Success", "Open new account successfully.")
 
         except Exception:
             self.connection.rollback()
