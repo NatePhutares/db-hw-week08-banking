@@ -345,7 +345,7 @@ class BankingApp:
           the trigger handles BankReserves automatically!
         """
         # TODO 1 ----
-        # get account_id and amount
+        # get inputs from entries
         account_id = self.deposit_account_entry.get().strip()
         amount = self.deposit_amount_entry.get().strip()
 
@@ -414,7 +414,7 @@ class BankingApp:
         - With these, database enforces business rules!
         """
         # TODO 1
-        # get entries
+        # get inputs from entries
         account_id = self.withdraw_account_entry.get().strip()
         amount = self.withdraw_amount_entry.get().strip()
 
@@ -445,7 +445,7 @@ class BankingApp:
                 cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
 
                 # check sufficient funds
-                balance = cursor.fetchone()['balance']
+                balance = float(cursor.fetchone()['balance'])
                 if (balance - amount < 0):
                     messagebox.showerror("Error", "Insufficient funds.")
                     self.connection.rollback()
@@ -492,7 +492,66 @@ class BankingApp:
         - Benefits: ACID guaranteed by database, less Python code,
           business logic centralized in database!
         """
+        # TODO 1
+        # get inputs from entries
+        from_account = self.transfer_from_entry.get().strip()
+        to_account = self.transfer_to_entry.get().strip()
+        amount = self.transfer_amount_entry.get().strip()
+
+        # validate inputs
+        if (from_account == "" or to_account == "" or amount == ""):
+            messagebox.showerror("Input error", "Inputs cannot be empty")
+            return
+        elif (from_account == to_account):
+            messagebox.showerror("Input error", "Can't transfer to the same Account ID")
+            return
+        elif (float(amount) <= 0):
+            messagebox.showerror("Input error", "Amount must be positive number")
+            return
         
+        # start transaction
+        try:
+            amount = float(amount)
+            with self.connection.cursor() as cursor:
+                cursor.execute("START TRANSACTION")
+
+                # check if the account exist
+                cursor.execute("SELECT account_id FROM Accounts WHERE account_id IN (%s, %s)", (from_account, to_account))
+                exist = cursor.fetchall()
+                if (len(exist) != 2):
+                    messagebox.showerror("Input error", "No account found.")
+                    self.connection.rollback()
+                    return
+                
+                # lock rows
+                cursor.execute("SELECT balance FROM Accounts WHERE account_id IN (%s, %s)", (from_account, to_account))
+
+                # check sufficient funds
+                cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s", (from_account, ))
+                balance = float(cursor.fetchone()['balance'])
+                if (balance - amount < 0):
+                    messagebox.showerror("Error", "Insufficient funds.")
+                    self.connection.rollback()
+                    return
+
+                # update from_account balance, to_account balance and insert Transaction
+                cursor.execute("UPDATE Accounts SET balance = balance - %s WHERE account_id = %s", (amount, from_account))
+                cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
+                               (from_account, 'TRANSFER_OUT', amount)
+                )
+                cursor.execute("UPDATE Accounts SET balance = balance + %s WHERE account_id = %s", (amount, to_account))
+                cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
+                               (to_account, 'TRANSFER_IN', amount)
+                )
+
+            # commit changes
+            self.connection.commit()
+            messagebox.showinfo("Success", "Transfer successfully.")
+
+        except Exception:
+            self.connection.rollback()
+            messagebox.showerror("Error", "Failed to transfer.")
+            raise
 
     def check_balance(self):
         """
