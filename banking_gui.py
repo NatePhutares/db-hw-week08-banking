@@ -560,10 +560,13 @@ class BankingApp:
         2. SELECT balance FROM Accounts WHERE account_id = ?
         3. Display result in self.balance_result label
         """
+        # get input from entry
         account_id = self.balance_account_entry.get().strip()
         if account_id == "":
             messagebox.showerror("Input error", "Account ID cannot be empty.")
-        else:
+            return;
+    
+        try:
             account_id = int(account_id)
             with self.connection.cursor() as cursor:
                 cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s", account_id)
@@ -572,6 +575,10 @@ class BankingApp:
                     self.balance_result.config(text = "No account found.")
                 else:
                     self.balance_result.config(text = result["balance"])
+        except Exception:
+            self.balance_result.config(text = "Error")
+            messagebox.showerror("Error", "Failed to check balance.")
+            raise
 
     def refresh_accounts(self):
         """
@@ -581,7 +588,7 @@ class BankingApp:
         3. Fetch all rows
         4. Insert into accounts_tree
         """
-        pass
+        
 
     def refresh_statement(self):
         """
