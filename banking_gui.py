@@ -409,6 +409,56 @@ class BankingApp:
           automatically UPDATE BankReserves.total_reserve
         - With these, database enforces business rules!
         """
+        # TODO 1
+        # get entries
+        account_id = self.withdraw_account_entry.get().strip()
+        amount = self.withdraw_amount_entry.get().strip()
+
+        # validate inputs
+        if (account_id == "" or amount == ""):
+            messagebox.showerror("Input error", "Inputs cannot be empty")
+            return
+        elif (float(amount) <= 0):
+            messagebox.showerror("Input error", "Amount must be positive number")
+            return
+        
+        # start transaction
+        try:
+            account_id = int(account_id)
+            amount = float(amount)
+            with self.connection.cursor() as cursor:
+                # check if the account exist
+                cursor.execute("SELECT account_id FROM Accounts WHERE account_id = %s", (account_id, ))
+                exist = cursor.fetchone()
+                if (exist == None):
+                    messagebox.showerror("Input error", "No account found.")
+                    return
+                account_id = exist['account_id']
+                
+                # lock row
+                cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
+
+                # check sufficient funds
+                balance = cursor.fetchone()['balance']
+                if (balance - amount < 0):
+                    messagebox.showerror("Error", "Insufficient funds.")
+                    return
+                
+                # update Accounts balance, BankReserves and insert into Transactions
+                cursor.execute("UPDATE Accounts SET balance = balance - %s WHERE account_id = %s", (amount, account_id))
+                cursor.execute("UPDATE BankReserves SET total_reserve = total_reserve - %s WHERE branch_id = 1", (amount, ))
+                cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
+                               (account_id, 'WITHDRAW', amount)
+                )
+
+            # commit changes
+            self.connection.commit()
+            messagebox.showinfo("Success", "Withdraw successfully.")
+
+        except Exception:
+            self.connection.rollback()
+            messagebox.showerror("Error", "Failed to withdraw.")
+            raise
 
     def transfer(self):
         """
