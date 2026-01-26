@@ -288,6 +288,8 @@ class BankingApp:
         try:
             initial_deposit = float(initial_deposit)
             with self.connection.cursor() as cursor:
+                cursor.execute("START TRANSACTION")
+
                 # check if custom exist via tax_id
                 cursor.execute("SELECT customer_id FROM Customers WHERE tax_id = %s", (tax_id, ))
                 duplicate = cursor.fetchone()
@@ -347,7 +349,7 @@ class BankingApp:
         account_id = self.deposit_account_entry.get().strip()
         amount = self.deposit_amount_entry.get().strip()
 
-        # checking invalid inputs
+        # validate inputs
         if (account_id == "" or amount == ""):
             messagebox.showerror("Input error", "Inputs cannot be empty")
             return
@@ -360,6 +362,8 @@ class BankingApp:
             account_id = int(account_id)
             amount = float(amount)
             with self.connection.cursor() as cursor:
+                cursor.execute("START TRANSACTION")
+
                 # check if the account exist
                 cursor.execute("SELECT account_id FROM Accounts WHERE account_id = %s", (account_id, ))
                 exist = cursor.fetchone()
@@ -427,6 +431,8 @@ class BankingApp:
             account_id = int(account_id)
             amount = float(amount)
             with self.connection.cursor() as cursor:
+                cursor.execute("START TRANSACTION")
+
                 # check if the account exist
                 cursor.execute("SELECT account_id FROM Accounts WHERE account_id = %s", (account_id, ))
                 exist = cursor.fetchone()
@@ -485,7 +491,7 @@ class BankingApp:
         - Benefits: ACID guaranteed by database, less Python code,
           business logic centralized in database!
         """
-        messagebox.showinfo("TODO", "TODO: Implement transfer()")
+        
 
     def check_balance(self):
         """
