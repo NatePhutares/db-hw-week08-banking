@@ -280,7 +280,7 @@ class BankingApp:
         if customer_name == "" or tax_id == "" or initial_deposit == "":
             messagebox.showerror("Input error", "Inputs cannot be empty")
             return
-        elif (initial_deposit < 0):
+        elif (float(initial_deposit) < 0):
             messagebox.showerror("Input error", "Initial Deposit must be non-negative number")
             return
         
@@ -409,7 +409,6 @@ class BankingApp:
           automatically UPDATE BankReserves.total_reserve
         - With these, database enforces business rules!
         """
-        messagebox.showinfo("TODO", "TODO: Implement withdraw()")
 
     def transfer(self):
         """
