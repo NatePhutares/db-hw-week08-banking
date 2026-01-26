@@ -614,7 +614,24 @@ class BankingApp:
         2. SELECT from AllCustomerTransactions view
         3. Insert rows into statement_tree
         """
-        pass
+        # clear existing tree items
+        for row in self.statement_tree.get_children():
+            self.statement_tree.delete(row)        
+        
+        try:
+            with self.connection.cursor() as cursor:
+                # select from AllCustomerTransactions view  
+                cursor.execute("SELECT * FROM AllCustomerTransactions")
+
+                # fetch all rows
+                rows = cursor.fetchall()
+
+                # insert into statement_tree
+                for row in rows:
+                    self.statement_tree.insert("", "end", values=(row['CustomerName'], row['AccountID'], row['Type'], row['Amount'], row['Date']))
+        except Exception:
+            messagebox.showerror("Error", "Failed to display transaction information.")
+            raise
 
     def refresh_reserves(self):
         """
