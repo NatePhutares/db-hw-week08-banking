@@ -588,7 +588,24 @@ class BankingApp:
         3. Fetch all rows
         4. Insert into accounts_tree
         """
+        # clear existing tree items
+        for row in self.accounts_tree.get_children():
+            self.accounts_tree.delete(row)        
         
+        try:
+            with self.connection.cursor() as cursor:
+                # join Accounts and Customers tables    
+                cursor.execute("SELECT * FROM Accounts a JOIN Customers c ON a.customer_id = c.customer_id")
+
+                # fetch all rows
+                rows = cursor.fetchall()
+
+                # insert into account_tree
+                for row in rows:
+                    self.accounts_tree.insert("", "end", values=(row['account_id'], row['name'], row['tax_id'], row['balance']))
+        except Exception:
+            messagebox.showerror("Error", "Failed to display account information.")
+            raise
 
     def refresh_statement(self):
         """
