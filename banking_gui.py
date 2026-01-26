@@ -448,6 +448,7 @@ class BankingApp:
                 balance = cursor.fetchone()['balance']
                 if (balance - amount < 0):
                     messagebox.showerror("Error", "Insufficient funds.")
+                    self.connection.rollback()
                     return
                 
                 # update Accounts balance, BankReserves and insert into Transactions
