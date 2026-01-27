@@ -307,7 +307,6 @@ class BankingApp:
                 if (initial_deposit > 0):
                     account_id = cursor.lastrowid
                     cursor.execute("UPDATE Accounts SET balance = balance + %s WHERE account_id = %s", (initial_deposit, account_id))
-                    cursor.execute("UPDATE BankReserves SET total_reserve = total_reserve + %s WHERE branch_id = 1", (initial_deposit, ))
                     cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
                                    (account_id, "OPEN_ACCOUNT", initial_deposit)
                     )
@@ -374,7 +373,6 @@ class BankingApp:
                 # update Accounts balance, BankReserves total_reserve and insert into transaction
                 account_id = exist['account_id']
                 cursor.execute("UPDATE Accounts SET balance = balance + %s WHERE account_id = %s", (amount, account_id))
-                cursor.execute("UPDATE BankReserves SET total_reserve = total_reserve + %s WHERE branch_id = 1", (amount, ))
                 cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
                                (account_id, 'DEPOSIT', amount)
                 )
@@ -453,7 +451,6 @@ class BankingApp:
                 
                 # update Accounts balance, BankReserves and insert into Transactions
                 cursor.execute("UPDATE Accounts SET balance = balance - %s WHERE account_id = %s", (amount, account_id))
-                cursor.execute("UPDATE BankReserves SET total_reserve = total_reserve - %s WHERE branch_id = 1", (amount, ))
                 cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
                                (account_id, 'WITHDRAW', amount)
                 )
