@@ -16,7 +16,6 @@ CREATE TABLE IF NOT EXISTS Accounts (
     FOREIGN KEY (customer_id) REFERENCES Customers(customer_id),
     -- TODO TODO2: Add CHECK constraint - balance >= 0 (prevents overdraft)
 );
-ALTER TABLE Accounts ADD CONSTRAINT check_accounts_balance_nonnegative CHECK (balance >= 0);
 
 -- 3. Transactions table
 -- transaction_type: 'DEPOSIT', 'WITHDRAW', 'TRANSFER_IN', 'TRANSFER_OUT', 'OPEN_ACCOUNT'
@@ -29,7 +28,7 @@ CREATE TABLE IF NOT EXISTS Transactions (
     FOREIGN KEY (account_id) REFERENCES Accounts(account_id)
     -- TODO TODO2: Add CHECK constraint - amount > 0
 );
-ALTER TABLE Transactions ADD CONSTRAINT check_transactions_amount_positive CHECK (amount >= 0);
+
 
 -- 4. BankReserves table
 CREATE TABLE IF NOT EXISTS BankReserves (
@@ -56,6 +55,28 @@ FROM Transactions t
 JOIN Accounts a ON t.account_id = a.account_id
 JOIN Customers c ON a.customer_id = c.customer_id
 ORDER BY t.created_at DESC;
+
+
+-- TODO 2 PART 1
+ALTER TABLE Accounts ADD CONSTRAINT check_accounts_balance_nonnegative CHECK (balance >= 0);
+ALTER TABLE Transactions ADD CONSTRAINT check_transactions_amount_positive CHECK (amount >= 0);
+
+
+-- TODO 2 PART 2
+DELIMITER $$
+CREATE TRIGGER update_bankreserves_total_reserve
+AFTER UPDATE ON Accounts
+FOR EACH ROW
+BEGIN
+    DECLARE diff DEMCIMAL(15, 2);
+    SET diff = NEW.balance - OLD.balance
+    UPDATE BankReserves SET total_reserve = total_reserve + diff;
+END$$
+DELIMITER ;
+
+
+
+
 
 -- =============================================================================
 -- TODO2 CHALLENGES: Database Triggers & Stored Procedures
