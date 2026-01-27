@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS Accounts (
     balance DECIMAL(15, 2) DEFAULT 0.00,
     FOREIGN KEY (customer_id) REFERENCES Customers(customer_id),
     -- TODO TODO2: Add CHECK constraint - balance >= 0 (prevents overdraft)
-    CONSTRAINT check_accounts_balance_nonnegative CHECK (balance >= 0)
 );
+ALTER TABLE Accounts ADD CONSTRAINT check_accounts_balance_nonnegative CHECK (balance >= 0);
 
 -- 3. Transactions table
 -- transaction_type: 'DEPOSIT', 'WITHDRAW', 'TRANSFER_IN', 'TRANSFER_OUT', 'OPEN_ACCOUNT'
