@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS Transactions (
     FOREIGN KEY (account_id) REFERENCES Accounts(account_id)
     -- TODO TODO2: Add CHECK constraint - amount > 0
 );
+ALTER TABLE Transactions ADD CONSTRAINT check_transactions_amount_positive CHECK (amount >= 0);
 
 -- 4. BankReserves table
 CREATE TABLE IF NOT EXISTS BankReserves (
