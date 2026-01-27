@@ -88,6 +88,57 @@ END$$
 DELIMITER ;
 
 
+-- TODO2 Part 4: Create Stored Procedure for Transfer
+DELIMITER $$
+CREATE PROCEDURE transfer_money(
+    IN from_account_id INT,
+    IN to_account_id INT,
+    IN transfer_amount DECIMAL(15, 2)
+)
+BEGIN
+    -- create valuable
+    DECLARE len INT;
+
+    -- rollback if any SQL error occurs
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+    END;
+
+    -- start transaction
+    START TRANSACTION;
+
+    -- validate inputs
+    SELECT COUNT(account_id) INTO len FROM Accounts WHERE account_id IN (from_account_id, to_account_id);
+    IF len != 2 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Account not found';
+    ELSEIF transfer_amount <= 0 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Amount must be positive';
+    ELSEIF from_account_id = to_account_id THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Cannot transfer to the same Account ID';
+    END IF;
+
+    -- lock rows
+    SELECT balance FROM Accounts WHERE account_id = from_account_id FOR UPDATE;
+    SELECT balance FROM Accounts WHERE account_id = to_account_id FOR UPDATE;
+
+    -- update from_account balance, to_account balance and insert Transaction
+    UPDATE Accounts SET balance = balance - transfer_amount WHERE account_id = from_account_id;
+    INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (from_account_id, 'TRANSFER_OUT', transfer_amount);
+    UPDATE Accounts SET balance = balance + transfer_amount WHERE account_id = to_account_id;
+    INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (to_account_id, 'TRANSFER_IN', transfer_amount);
+
+    -- commit changes
+    COMMIT;
+END$$
+DELIMITER ;
+
 
 
 -- =============================================================================
