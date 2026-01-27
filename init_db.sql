@@ -57,23 +57,35 @@ JOIN Customers c ON a.customer_id = c.customer_id
 ORDER BY t.created_at DESC;
 
 
--- TODO 2 PART 1
+-- TODO2 Part 1: Add CHECK Constraints
 ALTER TABLE Accounts ADD CONSTRAINT check_accounts_balance_nonnegative CHECK (balance >= 0);
 ALTER TABLE Transactions ADD CONSTRAINT check_transactions_amount_positive CHECK (amount >= 0);
 
 
--- TODO 2 PART 2
+-- TODO2 Part 2: Create Trigger to Auto-Update BankReserves
 DELIMITER $$
 CREATE TRIGGER update_bankreserves_total_reserve
 AFTER UPDATE ON Accounts
 FOR EACH ROW
 BEGIN
-    DECLARE diff DEMCIMAL(15, 2);
-    SET diff = NEW.balance - OLD.balance
+    DECLARE diff DECIMAL(15, 2);
+    SET diff = NEW.balance - OLD.balance;
     UPDATE BankReserves SET total_reserve = total_reserve + diff;
 END$$
 DELIMITER ;
 
+
+-- TODO2 Part 3: Create Trigger to Validate Sufficient Funds
+DELIMITER $$
+CREATE TRIGGER validate_sufficient_funds
+BEFORE UPDATE ON Accounts
+FOR EACH ROW
+BEGIN
+    IF NEW.balance < 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient funds';
+    END IF;
+END$$
+DELIMITER ;
 
 
 
