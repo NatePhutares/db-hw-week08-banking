@@ -239,11 +239,13 @@ def concurrent_deposit_withdraw_worker(worker_id: int, results: List):
                             conn.rollback()
                             continue
 
-                        # lock row
+                        # lock rows
                         cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
+                        cursor.execute("SELECT total_reserve FROM BankReserves WHERE branch_id = 1 FOR UPDATE")
 
                         # update tables
                         cursor.execute('UPDATE Accounts SET balance = balance + %s WHERE account_id = %s', (amount, account_id))
+                        cursor.execute("UPDATE BankReserves SET total_reserve = total_reserve + %s WHERE branch_id = 1", (amount, ))
                         cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
                                (account_id, 'DEPOSIT', amount)
                         )
@@ -261,6 +263,7 @@ def concurrent_deposit_withdraw_worker(worker_id: int, results: List):
 
                         # lock row and check sufficient fund
                         cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
+                        cursor.execute("SELECT total_reserve FROM BankReserves WHERE branch_id = 1 FOR UPDATE")
                         balance = cursor.fetchone()['balance']
                         if (balance < amount):
                             conn.rollback()
@@ -268,6 +271,7 @@ def concurrent_deposit_withdraw_worker(worker_id: int, results: List):
                         
                         # update tables
                         cursor.execute('UPDATE Accounts SET balance = balance - %s WHERE account_id = %s', (amount, account_id))
+                        cursor.execute("UPDATE BankReserves SET total_reserve = total_reserve - %s WHERE branch_id = 1", (amount, ))
                         cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
                                (account_id, 'WITHDRAW', amount)
                         )
