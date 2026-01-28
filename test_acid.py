@@ -262,8 +262,8 @@ def concurrent_deposit_withdraw_worker(worker_id: int, results: List):
                             continue
 
                         # lock row and check sufficient fund
-                        cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
                         cursor.execute("SELECT total_reserve FROM BankReserves WHERE branch_id = 1 FOR UPDATE")
+                        cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
                         balance = cursor.fetchone()['balance']
                         if (balance < amount):
                             conn.rollback()
