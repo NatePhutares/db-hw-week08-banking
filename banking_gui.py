@@ -303,14 +303,15 @@ class BankingApp:
                 # insert new account
                 cursor.execute("INSERT INTO Accounts (customer_id, balance) VALUES (%s, 0)", (customer_id, ))
 
-                # update Accounts balance and insert into transaction, BankReserves total_reserve already handled by trigger
                 if (initial_deposit > 0):
-                    # lock row
+                    # lock rows
                     account_id = cursor.lastrowid
                     cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
+                    cursor.execute("SELECT total_reserve FROM BankReserves WHERE branch_id = 1 FOR UPDATE")
                     
                     # update tables
                     cursor.execute("UPDATE Accounts SET balance = balance + %s WHERE account_id = %s", (initial_deposit, account_id))
+                    cursor.execute("UPDATE BankReserves SET total_reserve = total_reserve + %s WHERE branch_id = 1", (initial_deposit, ))
                     cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
                                    (account_id, "OPEN_ACCOUNT", initial_deposit)
                     )
@@ -374,12 +375,14 @@ class BankingApp:
                     messagebox.showerror("Input error", "No account found.")
                     return
                 
-                # lock row
+                # lock rows
                 account_id = exist['account_id']
                 cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
+                cursor.execute("SELECT total_reserve FROM BankReserves WHERE branch_id = 1 FOR UPDATE")
                 
-                # update Accounts balance and insert into transaction, BankReserves total_reserve already handled by trigger
+                # update Accounts balance, BankReserves total_reserve and insert into transaction
                 cursor.execute("UPDATE Accounts SET balance = balance + %s WHERE account_id = %s", (amount, account_id))
+                cursor.execute("UPDATE BankReserves SET total_reserve = total_reserve + %s WHERE branch_id = 1", (amount, ))
                 cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
                                (account_id, 'DEPOSIT', amount)
                 )
@@ -446,8 +449,9 @@ class BankingApp:
                     return
                 account_id = exist['account_id']
                 
-                # lock row
+                # lock rows
                 cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
+                cursor.execute("SELECT total_reserve FROM BankReserves WHERE branch_id = 1 FOR UPDATE")
 
                 # check sufficient funds
                 balance = float(cursor.fetchone()['balance'])
@@ -456,8 +460,9 @@ class BankingApp:
                     self.connection.rollback()
                     return
                 
-                # update Accounts balance and insert into transaction, BankReserves total_reserve already handled by trigger
+                # update Accounts balance, BankReserves total_reserve and insert into transaction
                 cursor.execute("UPDATE Accounts SET balance = balance - %s WHERE account_id = %s", (amount, account_id))
+                cursor.execute("UPDATE BankReserves SET total_reserve = total_reserve - %s WHERE branch_id = 1", (amount, ))
                 cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
                                (account_id, 'WITHDRAW', amount)
                 )
