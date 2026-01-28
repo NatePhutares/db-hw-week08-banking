@@ -131,15 +131,51 @@ def concurrent_transfer_worker(worker_id: int, results: List):
                     # - Use cursor.execute("START TRANSACTION")
                     # - Use FOR UPDATE to lock rows (prevents race conditions)
                     # - Use try/except to catch errors and rollback
+
+                    first = min(from_account, to_account)
+                    second = max(from_account, to_account)
                     
-                    # REMOVE THIS PLACEHOLDER and implement proper transaction
-                    pass  # TODO: Remove this and implement
+                    # start transaction
+                    cursor.execute("START TRANSACTION")
+
+                    # check if the account exist
+                    cursor.execute("SELECT account_id FROM Accounts WHERE account_id IN (%s, %s)", (from_account, to_account))
+                    exist = cursor.fetchall()
+                    if (len(exist) != 2):
+                        conn.rollback()
+                        continue
                     
-                success_count += 1
+                    # lock rows
+                    cursor.execute("SELECT account_id, balance FROM Accounts WHERE account_id = %s FOR UPDATE", (first, ))
+                    row1 = cursor.fetchone()
+                    cursor.execute("SELECT account_id, balance FROM Accounts WHERE account_id = %s FOR UPDATE", (second, ))
+                    row2 = cursor.fetchone()
+
+                    # determine which account is first
+                    if from_account == first:
+                        balance = float(row1['balance'])
+                    else:
+                        balance = float(row2['balance'])
+
+                    # update tables
+                    if balance >= amount:
+                        cursor.execute("UPDATE Accounts SET balance = balance - %s WHERE account_id = %s", (amount, from_account))
+                        cursor.execute("UPDATE Accounts SET balance = balance + %s WHERE account_id = %s", (amount, to_account))
+                        cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
+                               (from_account, 'TRANSFER_OUT', amount)
+                        )
+                        cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
+                               (to_account, 'TRANSFER_IN', amount)
+                        )
+                        cursor.execute("COMMIT")
+                        success_count += 1
+                    else:
+                        conn.rollback()
                 
             except Exception as e:
                 failure_count += 1
                 # Rollback is handled in your TODO implementation
+                conn.rollback()
                 
         results.append({
             'worker_id': worker_id,
@@ -223,11 +259,11 @@ def verify_consistency():
         with conn.cursor() as cursor:
             # Check 1: Sum of all account balances
             cursor.execute("SELECT SUM(balance) as total_accounts FROM Accounts WHERE customer_id IN (SELECT customer_id FROM Customers WHERE name LIKE 'Test%')")
-            total_accounts = cursor.fetchone()['total_accounts'] or 0
+            total_accounts = float(cursor.fetchone()['total_accounts']) or 0
             
             # Check 2: Bank reserves total
             cursor.execute("SELECT total_reserve FROM BankReserves WHERE branch_id = 1")
-            total_reserves = cursor.fetchone()['total_reserve'] or 0
+            total_reserves = float(cursor.fetchone()['total_reserve']) or 0
             
             # Check 3: Expected total (should remain constant)
             expected_total = NUM_ACCOUNTS * INITIAL_BALANCE
