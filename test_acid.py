@@ -230,14 +230,53 @@ def concurrent_deposit_withdraw_worker(worker_id: int, results: List):
                     # Remember: If ANY step fails, ROLLBACK all changes!
                     
                     if operation == 'deposit':
-                        pass  # TODO: Implement deposit
+                        cursor.execute('START TRANSACTION')
+
+                        # check if the account exist
+                        cursor.execute("SELECT account_id FROM Accounts WHERE account_id = %s", (account_id, ))
+                        exist = cursor.fetchone()
+                        if (exist == None):
+                            conn.rollback()
+                            continue
+
+                        # lock row
+                        cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
+
+                        # update tables
+                        cursor.execute('UPDATE Accounts SET balance = balance + %s WHERE account_id = %s', (amount, account_id))
+                        cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
+                               (account_id, 'DEPOSIT', amount)
+                        )
+                        conn.commit()
+            
                     else:
-                        pass  # TODO: Implement withdraw
-                    
+                        cursor.execute('START TRANSACTION')
+
+                        # check if the account exist
+                        cursor.execute("SELECT account_id FROM Accounts WHERE account_id = %s", (account_id, ))
+                        exist = cursor.fetchone()
+                        if (exist == None):
+                            conn.rollback()
+                            continue
+
+                        # lock row and check sufficient fund
+                        cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s FOR UPDATE", (account_id, ))
+                        balance = cursor.fetchone()['balance']
+                        if (balance < amount):
+                            conn.rollback()
+                            continue
+                        
+                        # update tables
+                        cursor.execute('UPDATE Accounts SET balance = balance - %s WHERE account_id = %s', (amount, account_id))
+                        cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
+                               (account_id, 'WITHDRAW', amount)
+                        )
+                        conn.commit()
                 success_count += 1
                 
             except Exception as e:
                 failure_count += 1
+                conn.rollback()
                 
         results.append({
             'worker_id': worker_id,
