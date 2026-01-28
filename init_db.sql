@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS Accounts (
     account_id INT AUTO_INCREMENT PRIMARY KEY,
     customer_id INT NOT NULL,
     balance DECIMAL(15, 2) DEFAULT 0.00,
-    FOREIGN KEY (customer_id) REFERENCES Customers(customer_id),
+    FOREIGN KEY (customer_id) REFERENCES Customers(customer_id)
     -- TODO TODO2: Add CHECK constraint - balance >= 0 (prevents overdraft)
 );
 
