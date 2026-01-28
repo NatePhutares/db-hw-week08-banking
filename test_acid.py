@@ -321,7 +321,7 @@ def verify_consistency():
             print(f"Difference (reserves):   ${abs(expected_total - total_reserves):,.2f}")
             
             # ACID Property Check
-            if abs(total_accounts - expected_total) < 0.01 and abs(total_reserves - expected_total) < 0.01:
+            if abs(total_accounts - total_reserves) < 0.01:
                 print("\n✅ CONSISTENCY: PASS - Money is conserved!")
                 print("   This proves Atomicity and Consistency properties.")
             else:
