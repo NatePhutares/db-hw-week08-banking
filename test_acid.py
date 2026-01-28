@@ -167,7 +167,7 @@ def concurrent_transfer_worker(worker_id: int, results: List):
                         cursor.execute("INSERT INTO Transactions (account_id, transaction_type, amount) VALUES (%s, %s, %s)",
                                (to_account, 'TRANSFER_IN', amount)
                         )
-                        cursor.execute("COMMIT")
+                        conn.commit()
                         success_count += 1
                     else:
                         conn.rollback()
