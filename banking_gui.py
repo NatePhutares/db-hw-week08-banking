@@ -520,12 +520,21 @@ class BankingApp:
                     self.connection.rollback()
                     return
                 
-                # lock rows
-                cursor.execute("SELECT balance FROM Accounts WHERE account_id IN (%s, %s)", (from_account, to_account))
+                # lock rows prevent deadlocks
+                first = min(from_account, to_account)
+                second = max(from_account, to_account)
+                cursor.execute("SELECT account_id, balance FROM Accounts WHERE account_id = %s FOR UPDATE", (first, ))
+                row1 = cursor.fetchone()
+                cursor.execute("SELECT account_id, balance FROM Accounts WHERE account_id = %s FOR UPDATE", (second, ))
+                row2 = cursor.fetchone()
+
+                # determine which account is first
+                if from_account == first:
+                    balance = float(row1['balance'])
+                else:
+                    balance = float(row2['balance'])
 
                 # check sufficient funds
-                cursor.execute("SELECT balance FROM Accounts WHERE account_id = %s", (from_account, ))
-                balance = float(cursor.fetchone()['balance'])
                 if (balance - amount < 0):
                     messagebox.showerror("Error", "Insufficient funds.")
                     self.connection.rollback()
